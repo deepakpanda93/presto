@@ -254,6 +254,25 @@ public abstract class AbstractTestAggregationsNative
                 "SELECT partkey, true FROM lineitem GROUP BY partkey");
     }
 
+    @Test
+    public void testQDigestFunctions()
+    {
+        // Non-DOUBLE input types — DOUBLE is already covered by testStatisticalDigest.
+        assertQuery("SELECT value_at_quantile(qdigest_agg(nationkey), 0e0) FROM nation");
+        assertQuery("SELECT value_at_quantile(qdigest_agg(CAST(nationkey AS REAL)), 0e0) FROM nation");
+
+        // values_at_quantiles
+        assertQuery("SELECT values_at_quantiles(qdigest_agg(nationkey), ARRAY[0e0, 1e0]) FROM nation");
+
+        // scale_qdigest and quantile_at_value (qdigest-specific functions)
+        assertQuery("SELECT value_at_quantile(scale_qdigest(qdigest_agg(nationkey), 2e0), 1e0) FROM nation");
+        assertQuery("SELECT quantile_at_value(qdigest_agg(nationkey), 24) FROM nation");
+
+        // nulls
+        assertQuery("SELECT value_at_quantile(qdigest_agg(CASE WHEN nationkey < 5 THEN nationkey END), 1e0) FROM nation");
+        assertQuery("SELECT value_at_quantile(qdigest_agg(CAST(NULL AS BIGINT)), 0.5) FROM nation");
+    }
+
     // TODO: remove and directly return charNToVarcharImplicitCast after addressing Issue #25894 and adding support for Char(n) type
     // to class NativeTypeManager for Sidecar.
     protected static boolean getCharNToVarcharImplicitCastForTest(boolean sidecarEnabled, boolean charNToVarcharImplicitCast)
